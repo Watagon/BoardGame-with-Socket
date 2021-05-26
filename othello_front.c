@@ -255,33 +255,22 @@ init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int g
         PointerMotionMask | PointerMotionHintMask
     );
 
-    // Set up window name
-    // XTextProperty text_prop = {
-    //     .value  = (unsigned char*)WINDOW_NAME,
-    //     .nitems = strlen(WINDOW_NAME),
-    //     .encoding = XA_STRING,
-    // };
+    // Set window name
     XTextProperty text_prop;
     XStringListToTextProperty(
         &WINDOW_NAME, 1, &text_prop
     );
 
+    // Set window minimum size
     XSizeHints *size_hits = XAllocSizeHints();
     size_hits->flags = PMinSize;
     size_hits->min_width    = WINDOW_SIZE_X_MIN;
     size_hits->min_height   = WINDOW_SIZE_Y_MIN;
 
-    XClassHint *class_hint = XAllocClassHint();
-    if (class_hint == NULL)
-        xerror("XAllocClassHint()");
-
-    class_hint->res_name = "hey";
-    class_hint->res_class = WINDOW_NAME;
-
     XSetWMProperties(
         othl->disp, othl->win,
         &text_prop, &text_prop,
-        argv, argc, size_hits, NULL, class_hint
+        argv, argc, size_hits, NULL, NULL
     );
 
     othl->wm_delete_window = XInternAtom(
@@ -291,6 +280,9 @@ init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int g
         othl->disp, othl->win,
         &othl->wm_delete_window, 1
     );
+
+    XFree(text_prop.value);
+    XFree(size_hits);
 
     XMapWindow(othl->disp, othl->win);
     XFlush(othl->disp);
