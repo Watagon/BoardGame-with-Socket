@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include "othello.h"
 
 #define WINDOW_SIZE_X_MIN 200
 #define WINDOW_SIZE_Y_MIN 200
@@ -18,24 +19,6 @@
 static char *FONT_NAME = "fixed";
 static char *WINDOW_NAME = "Report 1";
 
-typedef enum {
-    BLACK_MOVE,
-    WHITE_MOVE,
-    GAME_OVER
-} Game_state_t;
-
-typedef enum {
-    CELL_BLACK,
-    CELL_WHITE,
-    CELL_EMPTY
-} Cell_state_t;
-
-typedef struct othello {
-    u_int64_t black;
-    u_int64_t white;
-    Game_state_t state;
-    int size_x, size_y;
-} Othello_t;
 
 typedef struct Color_pixel {
     unsigned long black, black_highlight;
@@ -76,7 +59,6 @@ void alloc_named_colors (X11othello_t *othl);
 void create_GCs (X11othello_t *othl);
 void set_foregrounds (X11othello_t *othl);
 
-void new_game (Othello_t *game, int row, int col);
 void init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int grid_gap);
 
 int min (int a, int b);
@@ -197,19 +179,6 @@ void set_foregrounds (X11othello_t *othl)
 }
 // </GC initializer and applier>
 // --------------------------------------------------
-void new_game (Othello_t *game, int row, int col)
-{
-    assert(0<row && 0<col);
-    assert(row*col <= sizeof(u_int64_t)*CHAR_BIT);
-
-    game->black = 0;
-    game->white = 0;
-    game->state = BLACK_MOVE;
-
-    game->size_x = row;
-    game->size_y = col;
-}
-
 void
 init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int grid_gap)
 {
