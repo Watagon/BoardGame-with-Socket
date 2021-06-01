@@ -13,23 +13,23 @@ void new_game (Connect4_t *game, int col_num, int row_num)
     game->white = 0;
     game->state = BLACK_MOVE;
 
-    game->col = col_num;
-    game->row = row_num;
+    game->col_num = col_num;
+    game->row_num = row_num;
 }
 
 static bool
 is_valid_move (Connect4_t *cnct4, int row, int col)
 {
-    assert(0<row && row<cnct4->row);
-    assert(0<col && col<cnct4->col);
+    assert(0<row && row<cnct4->row_num);
+    assert(0<col && col<cnct4->col_num);
 
-    if (row == cnct4->row-1)
+    if (row == cnct4->row_num-1)
         return true;
     
     uint64_t filled = cnct4->black|cnct4->white;
     uint64_t empty  = ~filled;
-    uint64_t mask   = (uint64_t)1<<row*cnct4->col + col;
-    uint64_t below  = mask<<cnct4->col;
+    uint64_t mask   = (uint64_t)1<<row*cnct4->col_num + col;
+    uint64_t below  = mask<<cnct4->col_num;
 
     if (empty&mask && filled&below)
         return true;
@@ -43,7 +43,7 @@ connect4_make_move (Connect4_t *cnct4, int row, int col)
     if (!is_valid_move(cnct4, row, col))
         return -1; 
     
-    uint64_t new_cell = (uint64_t)1<<row*cnct4->row+col;
+    uint64_t new_cell = (uint64_t)1<<row*cnct4->row_num+col;
 
     uint64_t *cell_bits;
     switch (cnct4->state)
@@ -64,7 +64,7 @@ connect4_make_move (Connect4_t *cnct4, int row, int col)
 Cell_state_t
 connect4_cell_state (Connect4_t *cnct4, int row, int col)
 {
-    uint64_t mask = (uint64_t)1<<row*cnct4->col + col;
+    uint64_t mask = (uint64_t)1<<row*cnct4->col_num + col;
 
     if (mask&cnct4->black)
         return CELL_BLACK;
