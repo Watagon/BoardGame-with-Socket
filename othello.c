@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-void new_game (Othello_t *game, int row, int col)
+void new_game (Connect4_t *game, int row, int col)
 {
     assert(0<row && 0<col);
     assert(row*col <= sizeof(int64_t)*CHAR_BIT);

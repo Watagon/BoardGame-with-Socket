@@ -41,7 +41,7 @@ typedef struct Grid {
 } Grid_t;
 
 typedef struct X11othello {
-    Othello_t game;
+    Connect4_t game;
     Display *disp;
     Window  win;
     Grid_t grid;
@@ -49,30 +49,30 @@ typedef struct X11othello {
     XFontStruct *font;
     Color_pixel_t color_pixel;
     Atom wm_delete_window;
-} X11othello_t;
+} X11Connect4_t;
 
-// X11othello_t othello;
+// X11Connect4_t othello;
 
-static unsigned long _alloc_named_color (X11othello_t *othl, const char *color_name);
-void alloc_named_colors (X11othello_t *othl);
-void create_GCs (X11othello_t *othl);
-void set_foregrounds (X11othello_t *othl);
+static unsigned long _alloc_named_color (X11Connect4_t *cnct4, const char *color_name);
+void alloc_named_colors (X11Connect4_t *cnct4);
+void create_GCs (X11Connect4_t *cnct4);
+void set_foregrounds (X11Connect4_t *cnct4);
 
-void init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int grid_gap);
+void init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap);
 
 int min (int a, int b);
 int max (int a, int b);
 
-bool is_on_grid (X11othello_t *othl, int cursor_x, int cursor_y, int *row, int *col);
-void optimize_grid_pos (X11othello_t *othl, int win_width, int win_height);
-void draw_string (X11othello_t *othl, const char *str, int xpos, int ypos);
-void draw_cell (X11othello_t *othl, int row, int col);
-void draw_grid (X11othello_t *othl);
-void select_cell (X11othello_t *othl, int row, int col);
-void highlight_cell_mouse_on (X11othello_t *othl);
-void mouse_click (X11othello_t *othl);
+bool is_on_grid (X11Connect4_t *cnct4, int cursor_x, int cursor_y, int *row, int *col);
+void optimize_grid_pos (X11Connect4_t *cnct4, int win_width, int win_height);
+void draw_string (X11Connect4_t *cnct4, const char *str, int xpos, int ypos);
+void draw_cell (X11Connect4_t *cnct4, int row, int col);
+void draw_grid (X11Connect4_t *cnct4);
+void select_cell (X11Connect4_t *cnct4, int row, int col);
+void highlight_cell_mouse_on (X11Connect4_t *cnct4);
+void mouse_click (X11Connect4_t *cnct4);
 
-void loop (X11othello_t *othl);
+void loop (X11Connect4_t *cnct4);
 
 
 
@@ -95,16 +95,16 @@ void xerror (const char *msg)
 // <Color initializer>
 
 static unsigned long
-_alloc_named_color (X11othello_t *othl, const char *color_name)
+_alloc_named_color (X11Connect4_t *cnct4, const char *color_name)
 {
     Colormap cmap = DefaultColormap(
-        othl->disp,
-        DefaultScreen(othl->disp)
+        cnct4->disp,
+        DefaultScreen(cnct4->disp)
     );
     XColor color, useless;
     int rslt;
     rslt = XAllocNamedColor(
-        othl->disp,
+        cnct4->disp,
         cmap,
         color_name,
         &color,
@@ -116,15 +116,15 @@ _alloc_named_color (X11othello_t *othl, const char *color_name)
     return color.pixel;
 }
 
-void alloc_named_colors (X11othello_t *othl)
+void alloc_named_colors (X11Connect4_t *cnct4)
 {
-    othl->color_pixel = (Color_pixel_t){
-        .black = BlackPixel(othl->disp, DefaultScreen(othl->disp)),
-        .white = WhitePixel(othl->disp, DefaultScreen(othl->disp)),
-        .board = _alloc_named_color(othl, "ForestGreen"),
-        .black_highlight = _alloc_named_color(othl, "DarkSlateGray"),
-        .white_highlight = _alloc_named_color(othl, "Honeydew"),
-        .board_highlight = _alloc_named_color(othl, "Green"),
+    cnct4->color_pixel = (Color_pixel_t){
+        .black = BlackPixel(cnct4->disp, DefaultScreen(cnct4->disp)),
+        .white = WhitePixel(cnct4->disp, DefaultScreen(cnct4->disp)),
+        .board = _alloc_named_color(cnct4, "ForestGreen"),
+        .black_highlight = _alloc_named_color(cnct4, "DarkSlateGray"),
+        .white_highlight = _alloc_named_color(cnct4, "Honeydew"),
+        .board_highlight = _alloc_named_color(cnct4, "Green"),
     };
 
 }
@@ -132,92 +132,92 @@ void alloc_named_colors (X11othello_t *othl)
 // </Color initializer>
 // --------------------------------------------------
 // <GC intializer and applier>
-void create_GCs (X11othello_t *othl)
+void create_GCs (X11Connect4_t *cnct4)
 {
-    othl->GCs = (GCs_t){
-        .black = XCreateGC(othl->disp, othl->win, 0, NULL),
-        .white = XCreateGC(othl->disp, othl->win, 0, NULL),
-        .board = XCreateGC(othl->disp, othl->win, 0, NULL),
-        .black_highlight = XCreateGC(othl->disp, othl->win, 0, NULL),
-        .white_highlight = XCreateGC(othl->disp, othl->win, 0, NULL),
-        .board_highlight = XCreateGC(othl->disp, othl->win, 0, NULL),
+    cnct4->GCs = (GCs_t){
+        .black = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
+        .white = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
+        .board = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
+        .black_highlight = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
+        .white_highlight = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
+        .board_highlight = XCreateGC(cnct4->disp, cnct4->win, 0, NULL),
     };
 }
-void set_foregrounds (X11othello_t *othl)
+void set_foregrounds (X11Connect4_t *cnct4)
 {
     XSetForeground(
-        othl->disp,
-        othl->GCs.black,
-        othl->color_pixel.black
+        cnct4->disp,
+        cnct4->GCs.black,
+        cnct4->color_pixel.black
     );
     XSetForeground(
-        othl->disp,
-        othl->GCs.white,
-        othl->color_pixel.white
+        cnct4->disp,
+        cnct4->GCs.white,
+        cnct4->color_pixel.white
     );
     XSetForeground(
-        othl->disp,
-        othl->GCs.black_highlight,
-        othl->color_pixel.black_highlight
+        cnct4->disp,
+        cnct4->GCs.black_highlight,
+        cnct4->color_pixel.black_highlight
     );
     XSetForeground(
-        othl->disp,
-        othl->GCs.white_highlight,
-        othl->color_pixel.white_highlight
+        cnct4->disp,
+        cnct4->GCs.white_highlight,
+        cnct4->color_pixel.white_highlight
     );
     XSetForeground(
-        othl->disp,
-        othl->GCs.board,
-        othl->color_pixel.board
+        cnct4->disp,
+        cnct4->GCs.board,
+        cnct4->color_pixel.board
     );
     XSetForeground(
-        othl->disp,
-        othl->GCs.board_highlight,
-        othl->color_pixel.board_highlight
+        cnct4->disp,
+        cnct4->GCs.board_highlight,
+        cnct4->color_pixel.board_highlight
     );
 }
 // </GC initializer and applier>
 // --------------------------------------------------
 void
-init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int grid_gap)
+init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap)
 {
 
     assert(0 <= row_num && row_num < 10);
     assert(0 <= col_num && col_num < 10);
 
-    new_game(&othl->game, col_num, row_num);
-    othl->grid.col_num = col_num;
-    othl->grid.row_num = row_num;
-    othl->grid.gap_size = grid_gap;
-    // X11othello_t *othl = &othello;
+    new_game(&cnct4->game, col_num, row_num);
+    cnct4->grid.col_num = col_num;
+    cnct4->grid.row_num = row_num;
+    cnct4->grid.gap_size = grid_gap;
+    // X11Connect4_t *cnct4 = &othello;
     // XSetErrorHandler(err_handler);
-    othl->disp = XOpenDisplay(NULL);
-    // if (othl->disp == NULL)
+    cnct4->disp = XOpenDisplay(NULL);
+    // if (cnct4->disp == NULL)
     //     xerror("XOpenDisplay()");
 
-    othl->win = XCreateSimpleWindow(
-        othl->disp, RootWindow(othl->disp, DefaultScreen(othl->disp)),
+    cnct4->win = XCreateSimpleWindow(
+        cnct4->disp, RootWindow(cnct4->disp, DefaultScreen(cnct4->disp)),
         0, 0, DEFAULT_SIZE_X, DEFAULT_SIZE_Y, GRID_LINE_WID,
-        BlackPixel(othl->disp, DefaultScreen(othl->disp)),
-        WhitePixel(othl->disp, DefaultScreen(othl->disp))
+        BlackPixel(cnct4->disp, DefaultScreen(cnct4->disp)),
+        WhitePixel(cnct4->disp, DefaultScreen(cnct4->disp))
     );
-    // XMapWindow(othl->disp, othl->win);
-    alloc_named_colors(othl);
-    create_GCs(othl);
-    set_foregrounds(othl);
+    // XMapWindow(cnct4->disp, cnct4->win);
+    alloc_named_colors(cnct4);
+    create_GCs(cnct4);
+    set_foregrounds(cnct4);
 
     // Set up the font
-    othl->font = XLoadQueryFont(othl->disp, FONT_NAME);
-    if (othl->font == NULL)
+    cnct4->font = XLoadQueryFont(cnct4->disp, FONT_NAME);
+    if (cnct4->font == NULL)
         puts("font not found");
-    XSetFont(othl->disp, othl->GCs.black, othl->font->fid);
+    XSetFont(cnct4->disp, cnct4->GCs.black, cnct4->font->fid);
 
 
     // puts("Good");
 
     // Set up the Event Mask
     XSelectInput(
-        othl->disp, othl->win,
+        cnct4->disp, cnct4->win,
         ExposureMask | StructureNotifyMask |
         ButtonPressMask |
         PointerMotionMask | PointerMotionHintMask
@@ -236,24 +236,24 @@ init (X11othello_t *othl, char **argv, int argc, int col_num, int row_num, int g
     size_hits->min_height   = WINDOW_SIZE_Y_MIN;
 
     XSetWMProperties(
-        othl->disp, othl->win,
+        cnct4->disp, cnct4->win,
         &text_prop, &text_prop,
         argv, argc, size_hits, NULL, NULL
     );
 
-    othl->wm_delete_window = XInternAtom(
-        othl->disp, "WM_DELETE_WINDOW", False
+    cnct4->wm_delete_window = XInternAtom(
+        cnct4->disp, "WM_DELETE_WINDOW", False
     );
     XSetWMProtocols(
-        othl->disp, othl->win,
-        &othl->wm_delete_window, 1
+        cnct4->disp, cnct4->win,
+        &cnct4->wm_delete_window, 1
     );
 
     XFree(text_prop.value);
     XFree(size_hits);
 
-    XMapWindow(othl->disp, othl->win);
-    XFlush(othl->disp);
+    XMapWindow(cnct4->disp, cnct4->win);
+    XFlush(cnct4->disp);
 }
 
 
@@ -268,9 +268,9 @@ int max (int a, int b)
 }
 
 bool
-is_on_grid (X11othello_t *othl, int cursor_x, int cursor_y, int *row, int *col)
+is_on_grid (X11Connect4_t *cnct4, int cursor_x, int cursor_y, int *row, int *col)
 {
-    Grid_t *grid = &othl->grid;
+    Grid_t *grid = &cnct4->grid;
 
     *row = -1 + (cursor_y - grid->pos_y)/(grid->cellsize_y + grid->gap_size);
     *col = -1 + (cursor_x - grid->pos_x)/(grid->cellsize_x + grid->gap_size);
@@ -285,50 +285,50 @@ is_on_grid (X11othello_t *othl, int cursor_x, int cursor_y, int *row, int *col)
 }
 
 void
-optimize_grid_pos (X11othello_t *othl, int win_width, int win_height)
+optimize_grid_pos (X11Connect4_t *cnct4, int win_width, int win_height)
 {
     // (col_num)x(row_num) for the game board
     // top row left column for labels
     // bottom row for status text
     // right column is empty
 
-    int nCellx = othl->grid.col_num;
+    int nCellx = cnct4->grid.col_num;
     int cellsize_x =
-        (win_width - (nCellx+1)*othl->grid.gap_size)/(nCellx+2);
+        (win_width - (nCellx+1)*cnct4->grid.gap_size)/(nCellx+2);
 
-    int nCelly = othl->grid.row_num;
+    int nCelly = cnct4->grid.row_num;
     int cellsize_y =
-        (win_height - (nCelly+1)*othl->grid.gap_size)/(nCelly+2);
+        (win_height - (nCelly+1)*cnct4->grid.gap_size)/(nCelly+2);
 
     if (cellsize_x < cellsize_y)
-        othl->grid.cellsize_x = othl->grid.cellsize_y = cellsize_x;
+        cnct4->grid.cellsize_x = cnct4->grid.cellsize_y = cellsize_x;
     else
-        othl->grid.cellsize_x = othl->grid.cellsize_y = cellsize_y;
+        cnct4->grid.cellsize_x = cnct4->grid.cellsize_y = cellsize_y;
 
-    othl->grid.size_x = (nCellx+2)*othl->grid.cellsize_x + (nCellx+2);
-    othl->grid.size_y = (nCelly+2)*othl->grid.cellsize_y + (nCelly+2);
+    cnct4->grid.size_x = (nCellx+2)*cnct4->grid.cellsize_x + (nCellx+2);
+    cnct4->grid.size_y = (nCelly+2)*cnct4->grid.cellsize_y + (nCelly+2);
 
-    othl->grid.pos_x = win_width/2 - othl->grid.size_x/2;
-    othl->grid.pos_y = win_height/2 - othl->grid.size_y/2;
+    cnct4->grid.pos_x = win_width/2 - cnct4->grid.size_x/2;
+    cnct4->grid.pos_y = win_height/2 - cnct4->grid.size_y/2;
 }
 
 
-void draw_string (X11othello_t *othl, const char *str, int xpos, int ypos)
+void draw_string (X11Connect4_t *cnct4, const char *str, int xpos, int ypos)
 {
-    int width = XTextWidth(othl->font, str, strlen(str));
-    int height = othl->font->ascent + othl->font->descent;
+    int width = XTextWidth(cnct4->font, str, strlen(str));
+    int height = cnct4->font->ascent + cnct4->font->descent;
 
     XDrawString(
-        othl->disp, othl->win,
-        othl->GCs.black,
+        cnct4->disp, cnct4->win,
+        cnct4->GCs.black,
         xpos - width/2, ypos + height/2,
         str, strlen(str)
     );
 }
 
-void draw_cell (X11othello_t *othl, int row, int col)
+void draw_cell (X11Connect4_t *cnct4, int row, int col)
 {
-    Grid_t *grid = &othl->grid;
+    Grid_t *grid = &cnct4->grid;
 
     // 一番上の行と右の列はラベル用のセルなので飛ばす
     int x = grid->pos_x + (col+1)*(grid->cellsize_x + grid->gap_size);
@@ -340,23 +340,23 @@ void draw_cell (X11othello_t *othl, int row, int col)
     );
 
     XFillRectangle(
-        othl->disp, othl->win,
-        is_highlight ? othl->GCs.board_highlight : othl->GCs.board,
-        x, y, othl->grid.cellsize_x, othl->grid.cellsize_y
+        cnct4->disp, cnct4->win,
+        is_highlight ? cnct4->GCs.board_highlight : cnct4->GCs.board,
+        x, y, cnct4->grid.cellsize_x, cnct4->grid.cellsize_y
     );
 }
 
-void draw_grid (X11othello_t *othl)
+void draw_grid (X11Connect4_t *cnct4)
 {
-    XClearWindow(othl->disp, othl->win);
+    XClearWindow(cnct4->disp, cnct4->win);
 
-    Grid_t *grid = &othl->grid;
+    Grid_t *grid = &cnct4->grid;
     int nCellx = grid->col_num;
     int nCelly = grid->row_num;
 
     XFillRectangle(
-        othl->disp, othl->win,
-        othl->GCs.black,
+        cnct4->disp, cnct4->win,
+        cnct4->GCs.black,
         grid->pos_x + grid->cellsize_x,
         grid->pos_y + grid->cellsize_y,
         nCellx*grid->cellsize_x + (nCellx+1)*grid->gap_size,
@@ -370,7 +370,7 @@ void draw_grid (X11othello_t *othl)
                 + grid->cellsize_y/2;
 
         char label[] = {"123456789"[row], '\0'};
-        draw_string(othl, label, x, y);
+        draw_string(cnct4, label, x, y);
     }
 
     for (int col = 0; col < grid->col_num; col++) {
@@ -380,35 +380,35 @@ void draw_grid (X11othello_t *othl)
         int y = grid->pos_y + grid->cellsize_y/2;
 
         char label[] = {"ABCDEFGHIJ"[col], '\0'};
-        draw_string(othl, label, x, y);
+        draw_string(cnct4, label, x, y);
     }
 
     for (int row = 0; row < grid->row_num; row++)
         for (int col = 0; col < grid->col_num; col++)
-            draw_cell(othl, row, col);
+            draw_cell(cnct4, row, col);
 }
 
-void select_cell (X11othello_t *othl, int row, int col)
+void select_cell (X11Connect4_t *cnct4, int row, int col)
 {
-    int old_row = othl->grid.selected_x;
-    int old_col = othl->grid.selected_y;
+    int old_row = cnct4->grid.selected_x;
+    int old_col = cnct4->grid.selected_y;
 
     // すでに選択済み
     if (row == old_row && col == old_col)
         return;
 
-    othl->grid.selected_x = row;
-    othl->grid.selected_y = col;
+    cnct4->grid.selected_x = row;
+    cnct4->grid.selected_y = col;
 
     // ハイライトを消すため
     if (0 <= old_row)
-        draw_cell(othl, old_row, old_col);
+        draw_cell(cnct4, old_row, old_col);
 
     if (0 <= row)
-        draw_cell(othl, row, col);
+        draw_cell(cnct4, row, col);
 }
 
-void highlight_cell_mouse_on (X11othello_t *othl)
+void highlight_cell_mouse_on (X11Connect4_t *cnct4)
 {
     Window root, child;
     int root_x, root_y;
@@ -416,8 +416,8 @@ void highlight_cell_mouse_on (X11othello_t *othl)
     unsigned int mask;
 
     int rslt = XQueryPointer(
-        othl->disp,
-        othl->win,
+        cnct4->disp,
+        cnct4->win,
         &root, &child,
         &root_x, &root_y,
         &win_x, &win_y,
@@ -427,65 +427,65 @@ void highlight_cell_mouse_on (X11othello_t *othl)
         return;
 
     int row, col;
-    if (is_on_grid(othl, win_x, win_y, &row, &col))
-        select_cell(othl, row, col);
+    if (is_on_grid(cnct4, win_x, win_y, &row, &col))
+        select_cell(cnct4, row, col);
     else
-        select_cell(othl, -1, -1); // 以前のハイライトを消すため
+        select_cell(cnct4, -1, -1); // 以前のハイライトを消すため
 
 
 }
 
-void mouse_click (X11othello_t *othl)
+void mouse_click (X11Connect4_t *cnct4)
 {
-    if (othl->game.state == GAME_OVER) {
-        new_game(&othl->game, othl->game.size_x, othl->game.size_y);
+    if (cnct4->game.state == GAME_OVER) {
+        new_game(&cnct4->game, cnct4->game.size_x, cnct4->game.size_y);
         return;
     }
-    if (othl->game.state == BLACK_MOVE) {
+    if (cnct4->game.state == BLACK_MOVE) {
 
     }
-    else if (othl->game.state == WHITE_MOVE) {
+    else if (cnct4->game.state == WHITE_MOVE) {
 
     }
         
 }
 
-int finalize (X11othello_t *othl)
+int finalize (X11Connect4_t *cnct4)
 {
-    XFreeGC(othl->disp, othl->GCs.black);
-    XFreeGC(othl->disp, othl->GCs.white);
-    XFreeGC(othl->disp, othl->GCs.board);
-    XFreeGC(othl->disp, othl->GCs.black_highlight);
-    XFreeGC(othl->disp, othl->GCs.white_highlight);
-    XFreeGC(othl->disp, othl->GCs.board_highlight);
+    XFreeGC(cnct4->disp, cnct4->GCs.black);
+    XFreeGC(cnct4->disp, cnct4->GCs.white);
+    XFreeGC(cnct4->disp, cnct4->GCs.board);
+    XFreeGC(cnct4->disp, cnct4->GCs.black_highlight);
+    XFreeGC(cnct4->disp, cnct4->GCs.white_highlight);
+    XFreeGC(cnct4->disp, cnct4->GCs.board_highlight);
 
-    XFreeFont(othl->disp, othl->font);
+    XFreeFont(cnct4->disp, cnct4->font);
 
-    XCloseDisplay(othl->disp);
+    XCloseDisplay(cnct4->disp);
 }
 
-void loop (X11othello_t *othl)
+void loop (X11Connect4_t *cnct4)
 {
     XEvent event;
     bool redraw_flg;
     for (;;) {
         if (redraw_flg) {
-            draw_grid(othl);
+            draw_grid(cnct4);
             redraw_flg = false;
         }
-        if (!XPending(othl->disp))
+        if (!XPending(cnct4->disp))
             continue;
 
-        XNextEvent(othl->disp, &event);
-        // XClearWindow(othl->disp, othl->win);
-        // XDrawString(othl->disp, othl->win, othl->GCs.board,
+        XNextEvent(cnct4->disp, &event);
+        // XClearWindow(cnct4->disp, cnct4->win);
+        // XDrawString(cnct4->disp, cnct4->win, cnct4->GCs.board,
         // 20, 20, "WE", 2);
-        // draw_string(othl, &"123456789"[0], 0, 0);
+        // draw_string(cnct4, &"123456789"[0], 0, 0);
 
         switch (event.type)
         {
             case ConfigureNotify:
-                optimize_grid_pos(othl,
+                optimize_grid_pos(cnct4,
                     event.xconfigure.width,
                     event.xconfigure.height
                 );
@@ -495,16 +495,16 @@ void loop (X11othello_t *othl)
                     redraw_flg = true;
                 break;
             case MotionNotify:
-                highlight_cell_mouse_on(othl);
+                highlight_cell_mouse_on(cnct4);
                 break;
             case ButtonPress:
-                highlight_cell_mouse_on(othl);
-                mouse_click(othl);
+                highlight_cell_mouse_on(cnct4);
+                mouse_click(cnct4);
                 redraw_flg = true;
 
                 break;
             case ClientMessage:
-                if (event.xclient.data.l[0] == othl->wm_delete_window) {
+                if (event.xclient.data.l[0] == cnct4->wm_delete_window) {
                     puts("Catch quit flag");
                     return;
                 }
@@ -517,13 +517,13 @@ void loop (X11othello_t *othl)
 
 int main (int argc, char *argv[])
 {
-    X11othello_t othl;
-    init(&othl, argv, argc, 7, 3, 1);
+    X11Connect4_t cnct4;
+    init(&cnct4, argv, argc, 7, 3, 1);
 
-    loop(&othl);
+    loop(&cnct4);
     // getchar();
 
-    finalize(&othl);
+    finalize(&cnct4);
 
     return 0;
 }
