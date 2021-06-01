@@ -18,7 +18,7 @@ typedef struct othello {
     uint64_t black;
     uint64_t white;
     Game_state_t state;
-    int size_x, size_y;
+    int col, row;
 } Connect4_t;
 
 void new_game (Connect4_t *game, int row, int col);
