@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
-#include <limits.h>
 #include "othello.h"
 
 #define WINDOW_SIZE_X_MIN 200

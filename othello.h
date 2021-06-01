@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 typedef enum {
     BLACK_MOVE,
     WHITE_MOVE,
@@ -13,8 +15,8 @@ typedef enum {
 } Cell_state_t;
 
 typedef struct othello {
-    u_int64_t black;
-    u_int64_t white;
+    uint64_t black;
+    uint64_t white;
     Game_state_t state;
     int size_x, size_y;
 } Othello_t;
