@@ -1,4 +1,4 @@
-#include "othello.h"
+#include "connect4.h"
 #include <assert.h>
 #include <limits.h>
 #include <stdint.h>

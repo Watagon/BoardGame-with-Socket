@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
-#include "othello.h"
+#include "connect4.h"
 
 #define WINDOW_SIZE_X_MIN 200
 #define WINDOW_SIZE_Y_MIN 200
