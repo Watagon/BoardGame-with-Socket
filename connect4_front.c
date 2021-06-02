@@ -335,8 +335,8 @@ void draw_cell (X11Connect4_t *cnct4, int row, int col)
     int y = grid->pos_y + (row+1)*(grid->cellsize_y + grid->gap_size);
 
     bool is_highlight = (
-        row == grid->selected_x &&
-        col == grid->selected_y
+        row == grid->selected_y &&
+        col == grid->selected_x
     );
 
     XFillRectangle(
@@ -390,15 +390,15 @@ void draw_grid (X11Connect4_t *cnct4)
 
 void select_cell (X11Connect4_t *cnct4, int row, int col)
 {
-    int old_row = cnct4->grid.selected_x;
-    int old_col = cnct4->grid.selected_y;
+    int old_col = cnct4->grid.selected_x;
+    int old_row = cnct4->grid.selected_y;
 
     // すでに選択済み
     if (row == old_row && col == old_col)
         return;
 
-    cnct4->grid.selected_x = row;
-    cnct4->grid.selected_y = col;
+    cnct4->grid.selected_x = col;
+    cnct4->grid.selected_y = row;
 
     // ハイライトを消すため
     if (0 <= old_row)
