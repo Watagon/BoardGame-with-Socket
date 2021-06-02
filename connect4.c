@@ -43,7 +43,7 @@ connect4_make_move (Connect4_t *cnct4, int row, int col)
     if (!is_valid_move(cnct4, row, col))
         return -1; 
     
-    uint64_t new_cell = (uint64_t)1<<row*cnct4->row_num+col;
+    uint64_t new_cell = (uint64_t)1<<row*cnct4->col_num+col;
 
     uint64_t *cell_bits;
     switch (cnct4->state)
