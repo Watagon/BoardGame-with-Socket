@@ -34,7 +34,7 @@ typedef struct GCs {
 typedef struct Grid {
     int row_num, col_num; // num of visible cells
     int cellsize_x, cellsize_y;
-    int selected_col, selected_row;
+    int selected_row, selected_col;
     int size_x, size_y; // including invisible cells
     int pos_x, pos_y;   // including invisible cells
     int gap_size;
