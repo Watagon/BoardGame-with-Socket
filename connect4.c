@@ -7,7 +7,7 @@
 void new_game (Connect4_t *game, int col_num, int row_num)
 {
     assert(0<col_num && 0<row_num);
-    assert(col_num*row_num <= sizeof(int64_t)*CHAR_BIT);
+    assert(col_num*row_num <= sizeof(uint64_t)*CHAR_BIT);
 
     game->black = 0;
     game->white = 0;
