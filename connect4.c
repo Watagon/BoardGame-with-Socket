@@ -20,8 +20,8 @@ void new_game (Connect4_t *game, int col_num, int row_num)
 static bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
-    assert(0<row && row<game->row_num);
-    assert(0<col && col<game->col_num);
+    assert(0<=row && row<game->row_num);
+    assert(0<=col && col<game->col_num);
 
     if (row == game->row_num-1)
         return true;
