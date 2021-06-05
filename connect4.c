@@ -1,3 +1,25 @@
+/*
+ *  Authour Ryo Watahiki
+ *
+ *  Connect four simulator (Background)
+ *
+ *
+ *  <<Relation between cells and bits>>
+ *
+ *  LSB has information of the top-left cell state
+ *
+ *  example with 7x2 board
+ *  O------
+ *  ------X
+ *
+ *  when extract 'O' (@ row=0, col=0) pos bit
+ *  board_bits & (1<<0*7+0)
+ *
+ *  when extract 'X' (@ row=1, col=6) pos bit
+ *  board_bits & (1<<1*7+6)
+ *
+ */
+
 #include "connect4.h"
 #include <assert.h>
 #include <limits.h>
