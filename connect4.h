@@ -24,4 +24,4 @@ typedef struct othello {
 
 void new_game (Connect4_t *game, int row, int col);
 int connect4_make_move (Connect4_t *game, int row, int col);
-Cell_state_t connec4_cell_state (Connect4_t *game, int row, int col);
+Cell_state_t connec4_get_cell_state (Connect4_t *game, int row, int col);

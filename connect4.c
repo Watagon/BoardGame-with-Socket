@@ -111,7 +111,7 @@ connect4_make_move (Connect4_t *game, int row, int col)
 
 
 Cell_state_t
-connect4_cell_state (Connect4_t *game, int row, int col)
+connect4_get_cell_state (Connect4_t *game, int row, int col)
 {
     uint64_t mask = (uint64_t)1<<row*game->col_num + col;
 
