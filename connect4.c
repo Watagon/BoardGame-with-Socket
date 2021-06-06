@@ -73,20 +73,14 @@ static bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
     // check if row and col are in valid range
-    if (row<0 || row<=game->row_num)
+    if (row < 0 || row <= game->row_num)
         return false;
-    if (col<0 || col<=game->col_num)
+    if (col < 0 || col <= game->col_num)
         return false;
 
-    if (row == game->row_num-1)
-        return true;
-    
-    uint64_t filled = game->black|game->white;
-    uint64_t empty  = ~filled;
-    uint64_t mask   = (uint64_t)1<<row*game->col_num + col;
-    uint64_t below  = mask<<game->col_num;
+    uint64_t bit_mask = 1<<(row * game->col_num + col);
 
-    if (empty&mask && filled&below)
+    if (bit_mask & connect4_generate_disk_placable_pos_mask(game))
         return true;
     else
         return false;
