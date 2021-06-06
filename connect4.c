@@ -39,6 +39,36 @@ void new_game (Connect4_t *game, int col_num, int row_num)
     game->row_num = row_num;
 }
 
+/*
+ *  Function name:
+ *      connect4_generate_disk_placable_pos_mask
+ *
+ *  Description:
+ *      return disk-placable cells position mask
+ *
+ *  Input:
+ *      game    :   game information
+ *
+ *  Output:
+ *      return  :   disk-placable cells position mask
+ */
+uint64_t
+connect4_generate_disk_placable_pos_mask (Connect4_t *game)
+{
+    int cell_num = game->col_num*game->row_num;
+
+    uint64_t valid_bits_mask = ~0>>(sizeof(uint64_t)*CHAR_BIT - cell_num);
+    uint64_t bottom = valid_bits_mask ^ (valid_bits_mask>>game->col_num);
+    uint64_t filled = game->white | game->black;
+
+    // shift cells upward by 1 row and set the bottom cells filled
+    uint64_t shifted = filled>>game->col_num | bottom;
+
+    uint64_t placable = (filled ^ shifted) & valid_bits_mask;
+
+    return placable;
+}
+
 static bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
