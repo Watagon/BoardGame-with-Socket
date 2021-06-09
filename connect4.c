@@ -105,6 +105,10 @@ connect4_make_move (Connect4_t *game, int row, int col)
     default:
         break;
     }
+
+    //  When there is no more placable cell (a drawn game)
+    if (!connect4_generate_disk_placable_pos_mask(game))
+        game->state = GAME_OVER;
     
     return 0;
 }
