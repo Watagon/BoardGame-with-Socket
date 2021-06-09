@@ -86,6 +86,85 @@ is_valid_move (Connect4_t *game, int row, int col)
         return false;
 }
 
+bool
+connect4_check_win (Connect4_t *game, int row, int col)
+{
+    uint64_t disks = (game->state == BLACK_MOVE) ? game->black : game->white;
+    const int connection_num = 4;
+    uint64_t mask = 1<<(row * game->col_num + col);
+    int count;
+
+    count = 0;
+
+    // Horizontal (left)
+    uint64_t mask_temp = mask;
+    for (int col_l = col - 1;
+            0 <= col_l && (disks & (mask_temp >>= 1));
+            col_l--)
+        count++;
+
+    // Horizontal (right)
+    mask_temp = mask;
+    for (int col_r = col + 1;
+            col_r < game->col_num && (disks & (mask_temp <<= 1));
+            col_r++)
+        count++;
+
+    if (count >= connection_num)
+        return true;
+
+
+    // Vertical
+    uint64_t tmp = disks & disks>>(2 * game->col_num);
+    if (tmp & tmp>>game->col_num)
+        return true;
+
+
+    count = 0;
+
+    // diagonal (/)(up)
+    mask_temp = mask;
+    for (int row_u = row - 1, col_r = col + 1;
+            0 <= row_u && col_r < game->col_num
+                && (disks & (mask_temp >>= game->col_num - 1));
+            row_u--, col_r++)
+        count++;
+
+    // diagonal (/)(down)
+    mask_temp = mask;
+    for (int row_d = row + 1, col_l = col - 1;
+            row_d < game->row_num && 0 <= col_l
+                && (disks & (mask_temp <<= game->col_num - 1));
+            row_d++, col_l++)
+        count++;
+
+    if (count >= connection_num)
+        return true;
+
+
+    count = 0;
+
+    // Diagonal (\)(up)
+    mask_temp = mask;
+    for (int row_u = row - 1, col_l = col - 1;
+            0 <= row_u && 0 <= col_l && (disks & (mask_temp >>= game->col_num + 1));
+            row_u--, col_l--)
+        count++;
+
+    // Diagonal (\)(down)
+    mask_temp = mask;
+    for (int row_d = row + 1, col_r = col + 1;
+            row_d < game->row_num && col_r < game->col_num
+                && (disks & (mask_temp <<= game->col_num + 1));
+            row_d++, col_r++)
+        count++;
+
+    if (count >= connection_num)
+        return true;
+
+    return false;
+}
+
 int
 connect4_make_move (Connect4_t *game, int row, int col)
 {
