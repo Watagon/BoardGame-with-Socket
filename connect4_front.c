@@ -535,6 +535,8 @@ int finalize (X11Connect4_t *cnct4)
     XFreeFont(cnct4->disp, cnct4->font);
 
     XCloseDisplay(cnct4->disp);
+
+    close(cnct4->sock_fd);
 }
 
 void loop (X11Connect4_t *cnct4)
