@@ -517,17 +517,18 @@ void highlight_cell_mouse_on (X11Connect4_t *cnct4)
 
 void mouse_click (X11Connect4_t *cnct4)
 {
-    if (cnct4->game.state == GAME_OVER) {
-        new_game(&cnct4->game, cnct4->game.row_num, cnct4->game.row_num);
+    if (connect4_get_game_state(&cnct4->game) != cnct4->my_move)
         return;
-    }
-    if (cnct4->game.state == BLACK_MOVE) {
 
-    }
-    else if (cnct4->game.state == WHITE_MOVE) {
+    Grid_t *grid = &cnct4->grid;
+    if (!is_valid_move(&cnct4->game, grid->selected_row, grid->selected_col))
+        return;
 
-    }
-        
+    connect4_make_move(&cnct4->game, cnct4->grid.selected_row, cnct4->grid.selected_col);
+
+    char buf[BUF_MAX];
+    snprintf(buf, sizeof(buf), "PLACE-%d%d", grid->selected_col, grid->selected_row);
+    write(cnct4->sock_fd, buf, strlen(buf));
 }
 
 int finalize (X11Connect4_t *cnct4)
