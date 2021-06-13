@@ -221,6 +221,7 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
 
         listen(sock_fd, 1);
 
+        puts("Waiting a client connecting...");
         int temp_fd = sock_fd;
         sock_fd = accept(temp_fd, NULL, NULL);
         close(temp_fd);
@@ -228,10 +229,13 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
             perror("accept");
             exit(EXIT_FAILURE);
         }
+        puts("Established connects successfully!!");
     }
     else {
         // role == CONNECT4_CLIENT_ROLE
+        puts("Connecting to the server...");
         connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr));
+        puts("Connected!!");
     }
 
     return sock_fd;
