@@ -438,7 +438,7 @@ void highlight_cell_mouse_on (X11Connect4_t *cnct4)
 void mouse_click (X11Connect4_t *cnct4)
 {
     if (cnct4->game.state == GAME_OVER) {
-        new_game(&cnct4->game, cnct4->game.size_x, cnct4->game.size_y);
+        new_game(&cnct4->game, cnct4->game.row_num, cnct4->game.row_num);
         return;
     }
     if (cnct4->game.state == BLACK_MOVE) {
