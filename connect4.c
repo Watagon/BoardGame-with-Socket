@@ -28,6 +28,7 @@
 
 static uint64_t connect4_generate_disk_placable_pos_mask (Connect4_t *game);
 static bool connect4_check_win (Connect4_t *game, int row, int col);
+static void switch_player_turn (Connect4_t *game);
 
 void new_game (Connect4_t *game, int col_num, int row_num)
 {
@@ -199,10 +200,29 @@ connect4_make_move (Connect4_t *game, int row, int col)
         game->result = GAME_DRAW;
         game->state = GAME_OVER;
     }
-    
+
+    switch_player_turn(game);
+
     return 0;
 }
 
+static void
+switch_player_turn (Connect4_t *game)
+{
+    switch (game->state)
+    {
+    case BLACK_MOVE:
+        game->state = WHITE_MOVE;
+        break;
+
+    case WHITE_MOVE:
+        game->state = BLACK_MOVE;
+        break;
+
+    default:
+        break;
+    }
+}
 
 Cell_state_t
 connect4_get_cell_state (Connect4_t *game, int row, int col)
