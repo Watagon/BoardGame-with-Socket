@@ -248,3 +248,9 @@ connect4_get_game_result (Connect4_t *game)
 {
     return game->result;
 }
+
+Game_result_t
+connect4_get_my_win_result_value (Game_state_t my_move)
+{
+    return (my_move == BLACK_MOVE) ? BLACK_WIN : WHITE_WIN;
+}
