@@ -568,6 +568,7 @@ void loop (X11Connect4_t *cnct4)
         }
 
         if (FD_ISSET(cnct4->sock_fd, &fd_mask)) {
+            redraw_flg = true;
             ssize_t len = read(cnct4->sock_fd, buf, sizeof(buf));
             if (len < 0) {
                 perror("read");
