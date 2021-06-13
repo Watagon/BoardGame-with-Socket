@@ -26,6 +26,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+static uint64_t connect4_generate_disk_placable_pos_mask (Connect4_t *game);
+static bool connect4_check_win (Connect4_t *game, int row, int col);
+
 void new_game (Connect4_t *game, int col_num, int row_num)
 {
     assert(0<col_num && 0<row_num);
