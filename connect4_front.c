@@ -548,9 +548,68 @@ int finalize (X11Connect4_t *cnct4)
 
 void loop (X11Connect4_t *cnct4)
 {
+    char buf[BUF_MAX];
+    fd_set fd_mask;
     XEvent event;
     bool redraw_flg;
+    char *ERROR_MSG = "ERROR";
+    char *YOUWIN_MSG = "YOU-WIN";
     for (;;) {
+        FD_ZERO(&fd_mask);
+        FD_SET(cnct4->sock_fd, &fd_mask);
+        int select_ret = select(cnct4->sock_fd + 1,
+                    &fd_mask, NULL, NULL,
+                    &(struct timeval){.tv_usec = 1}
+        );
+        if (select_ret < 0) {
+            perror("select");
+            return;
+        }
+
+        if (FD_ISSET(cnct4->sock_fd, &fd_mask)) {
+            ssize_t len = read(cnct4->sock_fd, buf, sizeof(buf));
+            if (len < 0) {
+                perror("read");
+                return;
+            }
+            if (strstr(buf, "PLACE-")) {
+                // my move, not opposit's move
+                if (connect4_get_game_state(&cnct4->game) == cnct4->my_move) {
+                    puts("Error: it is your turn, but the oppsit made move");
+                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    return;
+                }
+                char xc, yc;
+                sscanf(buf, "PLACE-%c%c", &xc, &yc);
+                int col = xc - '0';
+                int row = yc - '0';
+                if (!is_valid_move(&cnct4->game, row, col)) {
+                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    puts("Error: Invalid move by the opposit");
+                    // printf("%d:%d\n", row, col);
+                    return;
+                }
+                connect4_make_move(&cnct4->game, row, col);
+            }
+            else if (strcmp(buf, ERROR_MSG) == 0) {
+                if (connect4_get_game_result(&cnct4->game) == GAME_DRAW) {
+                    puts("Game: Draw");
+                }
+                else {
+                    puts("Some error occured!!");
+                    return;
+                }
+            }
+            else if (strcmp(buf, YOUWIN_MSG) == 0) {
+                puts("congratulations!! You win!!");
+                return;
+            }
+            else {
+                puts("Recieved invalid messeage");
+                write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                return;
+            }
+        }
         if (redraw_flg) {
             draw_grid(cnct4);
             redraw_flg = false;
