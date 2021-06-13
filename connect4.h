@@ -35,3 +35,4 @@ bool is_valid_move (Connect4_t *game, int row, int col);
 Cell_state_t connect4_get_cell_state (Connect4_t *game, int row, int col);
 Game_state_t connect4_get_game_state (Connect4_t *game);
 Game_result_t connect4_get_game_result (Connect4_t *game);
+Game_result_t connect4_get_my_win_result_value (Game_state_t my_move);
