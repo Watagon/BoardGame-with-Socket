@@ -11,8 +11,8 @@
 #define WINDOW_SIZE_X_MIN 200
 #define WINDOW_SIZE_Y_MIN 200
 #define GRID_LINE_WID 1
-#define BOARD_ROW_SIZE 6
-#define BOARD_COL_SIZE 7
+#define BOARD_ROW_NUM 6
+#define BOARD_COL_NUM 7
 #define DEFAULT_SIZE_X 400
 #define DEFAULT_SIZE_Y 400
 static char *FONT_NAME = "fixed";
@@ -518,7 +518,7 @@ void loop (X11Connect4_t *cnct4)
 int main (int argc, char *argv[])
 {
     X11Connect4_t cnct4;
-    init(&cnct4, argv, argc, 7, 3, 1);
+    init(&cnct4, argv, argc, BOARD_COL_NUM, BOARD_ROW_NUM, 1);
 
     loop(&cnct4);
     // getchar();
