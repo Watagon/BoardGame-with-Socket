@@ -49,6 +49,7 @@ typedef struct Grid {
 
 typedef struct X11othello {
     Connect4_t game;
+    Game_state_t my_move;
     int sock_fd;
     Display *disp;
     Window  win;
@@ -248,6 +249,7 @@ init (X11Connect4_t *cnct4, char **argv, int argc,
     assert(0 <= col_num && col_num < 10);
 
     cnct4->sock_fd = init_sock(host_name, port_no, role);
+    cnct4->my_move = (role == CONNECT4_SERVER_ROLE) ? BLACK_MOVE : WHITE_MOVE;
 
     new_game(&cnct4->game, col_num, row_num);
     cnct4->grid.col_num = col_num;
