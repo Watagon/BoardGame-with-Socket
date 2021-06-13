@@ -344,6 +344,16 @@ void draw_cell (X11Connect4_t *cnct4, int row, int col)
         is_highlight ? cnct4->GCs.board_highlight : cnct4->GCs.board,
         x, y, cnct4->grid.cellsize_x, cnct4->grid.cellsize_y
     );
+
+    Cell_state_t cs;
+
+    if ((cs = connect4_get_cell_state(&cnct4->game, row, col)) != CELL_EMPTY) {
+        XFillArc(cnct4->disp, cnct4->win,
+            cs == BLACK_MOVE ? cnct4->GCs.black : cnct4->GCs.white,
+            x, y, grid->cellsize_x, grid->cellsize_y,
+            0, 360 * 64
+        );
+    }
 }
 
 void draw_grid (X11Connect4_t *cnct4)
