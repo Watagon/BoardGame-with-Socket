@@ -3,9 +3,14 @@
 #include <X11/Xatom.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "connect4.h"
 
 #define WINDOW_SIZE_X_MIN 200
@@ -15,6 +20,8 @@
 #define BOARD_COL_NUM 7
 #define DEFAULT_SIZE_X 400
 #define DEFAULT_SIZE_Y 400
+#define BUF_MAX 128
+static int DEFAULT_PORT_NO = 20000;
 static char *FONT_NAME = "fixed";
 static char *WINDOW_NAME = "Report 1";
 
@@ -42,6 +49,8 @@ typedef struct Grid {
 
 typedef struct X11othello {
     Connect4_t game;
+    Game_state_t my_move;
+    int sock_fd;
     Display *disp;
     Window  win;
     Grid_t grid;
@@ -51,14 +60,22 @@ typedef struct X11othello {
     Atom wm_delete_window;
 } X11Connect4_t;
 
+typedef enum {
+    CONNECT4_SERVER_ROLE,
+    CONNECT4_CLIENT_ROLE
+} Connect4_role_t;
+
 // X11Connect4_t othello;
 
 static unsigned long _alloc_named_color (X11Connect4_t *cnct4, const char *color_name);
 void alloc_named_colors (X11Connect4_t *cnct4);
 void create_GCs (X11Connect4_t *cnct4);
 void set_foregrounds (X11Connect4_t *cnct4);
+static int init_sock (char *host_name, int port_no, Connect4_role_t role);
 
-void init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap);
+void init (X11Connect4_t *cnct4, char **argv, int argc,
+            int col_num, int row_num, int grid_gap,
+            Connect4_role_t role, char *host_name, int port_no);
 
 int min (int a, int b);
 int max (int a, int b);
@@ -178,12 +195,65 @@ void set_foregrounds (X11Connect4_t *cnct4)
 }
 // </GC initializer and applier>
 // --------------------------------------------------
+// <Network initializer>
+static int
+init_sock (char *host_name, int port_no, Connect4_role_t role)
+{
+    struct sockaddr_in addr = {
+        .sin_family = AF_INET,
+        .sin_port   = htons(port_no)
+    };
+    // strcpy((char*)&addr.sin_addr, gethostbyname(host_name)->h_addr);
+    memcpy((char*)&addr.sin_addr, gethostbyname(host_name)->h_addr, gethostbyname(host_name)->h_length);
+
+    int sock_fd;
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    if (role == CONNECT4_SERVER_ROLE) {
+        if (bind(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            perror("bind");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
+        }
+
+        listen(sock_fd, 1);
+
+        puts("Waiting a client connecting...");
+        int temp_fd = sock_fd;
+        sock_fd = accept(temp_fd, NULL, NULL);
+        close(temp_fd);
+        if (sock_fd < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+        puts("Established connects successfully!!");
+    }
+    else {
+        // role == CONNECT4_CLIENT_ROLE
+        puts("Connecting to the server...");
+        connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr));
+        puts("Connected!!");
+    }
+
+    return sock_fd;
+}
+
+// </Network initializer>
+// --------------------------------------------------
 void
-init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap)
+init (X11Connect4_t *cnct4, char **argv, int argc,
+        int col_num, int row_num, int grid_gap,
+        Connect4_role_t role, char *host_name, int port_no)
 {
 
     assert(0 <= row_num && row_num < 10);
     assert(0 <= col_num && col_num < 10);
+
+    cnct4->sock_fd = init_sock(host_name, port_no, role);
+    cnct4->my_move = (role == CONNECT4_SERVER_ROLE) ? BLACK_MOVE : WHITE_MOVE;
 
     new_game(&cnct4->game, col_num, row_num);
     cnct4->grid.col_num = col_num;
@@ -344,6 +414,16 @@ void draw_cell (X11Connect4_t *cnct4, int row, int col)
         is_highlight ? cnct4->GCs.board_highlight : cnct4->GCs.board,
         x, y, cnct4->grid.cellsize_x, cnct4->grid.cellsize_y
     );
+
+    Cell_state_t cs;
+
+    if ((cs = connect4_get_cell_state(&cnct4->game, row, col)) != CELL_EMPTY) {
+        XFillArc(cnct4->disp, cnct4->win,
+            cs == BLACK_MOVE ? cnct4->GCs.black : cnct4->GCs.white,
+            x, y, grid->cellsize_x, grid->cellsize_y,
+            0, 360 * 64
+        );
+    }
 }
 
 void draw_grid (X11Connect4_t *cnct4)
@@ -462,13 +542,74 @@ int finalize (X11Connect4_t *cnct4)
     XFreeFont(cnct4->disp, cnct4->font);
 
     XCloseDisplay(cnct4->disp);
+
+    close(cnct4->sock_fd);
 }
 
 void loop (X11Connect4_t *cnct4)
 {
+    char buf[BUF_MAX];
+    fd_set fd_mask;
     XEvent event;
     bool redraw_flg;
+    char *ERROR_MSG = "ERROR";
+    char *YOUWIN_MSG = "YOU-WIN";
     for (;;) {
+        FD_ZERO(&fd_mask);
+        FD_SET(cnct4->sock_fd, &fd_mask);
+        int select_ret = select(cnct4->sock_fd + 1,
+                    &fd_mask, NULL, NULL,
+                    &(struct timeval){.tv_usec = 1}
+        );
+        if (select_ret < 0) {
+            perror("select");
+            return;
+        }
+
+        if (FD_ISSET(cnct4->sock_fd, &fd_mask)) {
+            ssize_t len = read(cnct4->sock_fd, buf, sizeof(buf));
+            if (len < 0) {
+                perror("read");
+                return;
+            }
+            if (strstr(buf, "PLACE-")) {
+                // my move, not opposit's move
+                if (connect4_get_game_state(&cnct4->game) == cnct4->my_move) {
+                    puts("Error: it is your turn, but the oppsit made move");
+                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    return;
+                }
+                char xc, yc;
+                sscanf(buf, "PLACE-%c%c", &xc, &yc);
+                int col = xc - '0';
+                int row = yc - '0';
+                if (!is_valid_move(&cnct4->game, row, col)) {
+                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    puts("Error: Invalid move by the opposit");
+                    // printf("%d:%d\n", row, col);
+                    return;
+                }
+                connect4_make_move(&cnct4->game, row, col);
+            }
+            else if (strcmp(buf, ERROR_MSG) == 0) {
+                if (connect4_get_game_result(&cnct4->game) == GAME_DRAW) {
+                    puts("Game: Draw");
+                }
+                else {
+                    puts("Some error occured!!");
+                    return;
+                }
+            }
+            else if (strcmp(buf, YOUWIN_MSG) == 0) {
+                puts("congratulations!! You win!!");
+                return;
+            }
+            else {
+                puts("Recieved invalid messeage");
+                write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                return;
+            }
+        }
         if (redraw_flg) {
             draw_grid(cnct4);
             redraw_flg = false;
@@ -518,7 +659,40 @@ void loop (X11Connect4_t *cnct4)
 int main (int argc, char *argv[])
 {
     X11Connect4_t cnct4;
-    init(&cnct4, argv, argc, BOARD_COL_NUM, BOARD_ROW_NUM, 1);
+    Connect4_role_t role;
+    char buf[BUF_MAX];
+
+    // Select role
+    do {
+        printf("Select your role\n");
+        printf("%d: Server\n", CONNECT4_SERVER_ROLE);
+        printf("%d: Client\n", CONNECT4_CLIENT_ROLE);
+        fgets(buf, sizeof(buf), stdin);
+        role = (Connect4_role_t)strtol(buf, NULL, 10);
+    } while (role != CONNECT4_SERVER_ROLE && role != CONNECT4_CLIENT_ROLE);
+
+    // Host name
+    if (role == CONNECT4_CLIENT_ROLE) {
+        do {
+            printf("Input server's host name: ");
+            fgets(buf, sizeof(buf), stdin);
+        } while (strlen(buf) == 0 || buf[0] == '\n');
+
+        if (buf[strlen(buf) - 1] == '\n')
+            buf[strlen(buf) - 1] = '\0';
+    }
+    else {
+        int ret = gethostname(buf, sizeof(buf));
+        if (ret < 0) {
+            perror("gethostname");
+            return 1;
+        }
+        printf("This server name: %s\n", buf);
+    }
+
+    init(&cnct4, argv, argc,
+            BOARD_COL_NUM, BOARD_ROW_NUM, 1,
+            role, buf, DEFAULT_PORT_NO);
 
     loop(&cnct4);
     // getchar();
