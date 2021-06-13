@@ -185,6 +185,10 @@ connect4_make_move (Connect4_t *game, int row, int col)
         break;
     }
 
+    // Check for win
+    if (connect4_check_win(game, row, col))
+        game->state = GAME_OVER;
+
     //  When there is no more placable cell (a drawn game)
     if (!connect4_generate_disk_placable_pos_mask(game))
         game->state = GAME_OVER;
