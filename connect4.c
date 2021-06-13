@@ -77,9 +77,9 @@ bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
     // check if row and col are in valid range
-    if (row < 0 || row <= game->row_num)
+    if (row < 0 || game->row_num <= row)
         return false;
-    if (col < 0 || col <= game->col_num)
+    if (col < 0 || game->col_num <= col)
         return false;
 
     uint64_t bit_mask = 1<<(row * game->col_num + col);
