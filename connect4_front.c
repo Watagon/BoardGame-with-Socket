@@ -227,6 +227,7 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
         close(temp_fd);
         if (sock_fd < 0) {
             perror("accept");
+            close(sock_fd);
             exit(EXIT_FAILURE);
         }
         puts("Established connects successfully!!");
@@ -234,7 +235,11 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
     else {
         // role == CONNECT4_CLIENT_ROLE
         puts("Connecting to the server...");
-        connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr));
+        if (connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            perror("connect");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
+        }
         puts("Connected!!");
     }
 
@@ -528,7 +533,10 @@ void mouse_click (X11Connect4_t *cnct4)
 
     char buf[BUF_MAX];
     snprintf(buf, sizeof(buf), "PLACE-%d%d", grid->selected_col, grid->selected_row);
-    write(cnct4->sock_fd, buf, strlen(buf));
+    if (write(cnct4->sock_fd, buf, strlen(buf)) < 0) {
+        perror("write");
+        return;
+    }
 }
 
 int finalize (X11Connect4_t *cnct4)
@@ -578,7 +586,10 @@ void loop (X11Connect4_t *cnct4)
                 // my move, not opposit's move
                 if (connect4_get_game_state(&cnct4->game) == cnct4->my_move) {
                     puts("Error: it is your turn, but the oppsit made move");
-                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                        perror("write");
+                        return;
+                    }
                     return;
                 }
                 char xc, yc;
@@ -586,7 +597,10 @@ void loop (X11Connect4_t *cnct4)
                 int col = xc - '0';
                 int row = yc - '0';
                 if (!is_valid_move(&cnct4->game, row, col)) {
-                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                        perror("write");
+                        return;
+                    }
                     puts("Error: Invalid move by the opposit");
                     // printf("%d:%d\n", row, col);
                     return;
@@ -608,7 +622,10 @@ void loop (X11Connect4_t *cnct4)
             }
             else {
                 puts("Recieved invalid messeage");
-                write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                    perror("write");
+                    return;
+                }
                 return;
             }
         }
