@@ -3,9 +3,14 @@
 #include <X11/Xatom.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "connect4.h"
 
 #define WINDOW_SIZE_X_MIN 200
@@ -15,6 +20,8 @@
 #define BOARD_COL_NUM 7
 #define DEFAULT_SIZE_X 400
 #define DEFAULT_SIZE_Y 400
+#define BUF_MAX 128
+static int DEFAULT_PORT_NO = 20000;
 static char *FONT_NAME = "fixed";
 static char *WINDOW_NAME = "Report 1";
 
@@ -42,6 +49,7 @@ typedef struct Grid {
 
 typedef struct X11othello {
     Connect4_t game;
+    int sock_fd;
     Display *disp;
     Window  win;
     Grid_t grid;
@@ -51,14 +59,22 @@ typedef struct X11othello {
     Atom wm_delete_window;
 } X11Connect4_t;
 
+typedef enum {
+    CONNECT4_SERVER_ROLE,
+    CONNECT4_CLIENT_ROLE
+} Connect4_role_t;
+
 // X11Connect4_t othello;
 
 static unsigned long _alloc_named_color (X11Connect4_t *cnct4, const char *color_name);
 void alloc_named_colors (X11Connect4_t *cnct4);
 void create_GCs (X11Connect4_t *cnct4);
 void set_foregrounds (X11Connect4_t *cnct4);
+static int init_sock (char *host_name, int port_no, Connect4_role_t role);
 
-void init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap);
+void init (X11Connect4_t *cnct4, char **argv, int argc,
+            int col_num, int row_num, int grid_gap,
+            Connect4_role_t role, char *host_name, int port_no);
 
 int min (int a, int b);
 int max (int a, int b);
@@ -178,12 +194,59 @@ void set_foregrounds (X11Connect4_t *cnct4)
 }
 // </GC initializer and applier>
 // --------------------------------------------------
+// <Network initializer>
+static int
+init_sock (char *host_name, int port_no, Connect4_role_t role)
+{
+    struct sockaddr_in addr = {
+        .sin_family = AF_INET,
+        .sin_port   = htons(port_no)
+    };
+    strcpy(addr.sin_addr, gethostbyname(host_name)->h_addr);
+
+    int sock_fd;
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    if (role == CONNECT4_SERVER_ROLE) {
+        if (bind(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            perror("bind");
+            exit(EXIT_FAILURE);
+            close(sock_fd);
+        }
+
+        listen(sock_fd, 1);
+
+        int temp_fd = sock_fd;
+        sock_fd = accept(temp_fd, NULL, NULL)
+        close(temp_fd);
+        if (sock_fd < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else {
+        // role == CONNECT4_CLIENT_ROLE
+        connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr));
+    }
+
+    return sock_fd;
+}
+
+// </Network initializer>
+// --------------------------------------------------
 void
-init (X11Connect4_t *cnct4, char **argv, int argc, int col_num, int row_num, int grid_gap)
+init (X11Connect4_t *cnct4, char **argv, int argc,
+        int col_num, int row_num, int grid_gap,
+        Connect4_role_t role, char *host_name, int port_no)
 {
 
     assert(0 <= row_num && row_num < 10);
     assert(0 <= col_num && col_num < 10);
+
+    cnct4->sock_fd = init_sock(host_name, port_no, role);
 
     new_game(&cnct4->game, col_num, row_num);
     cnct4->grid.col_num = col_num;
@@ -528,7 +591,40 @@ void loop (X11Connect4_t *cnct4)
 int main (int argc, char *argv[])
 {
     X11Connect4_t cnct4;
-    init(&cnct4, argv, argc, BOARD_COL_NUM, BOARD_ROW_NUM, 1);
+    Connect4_role_t role;
+    char buf[BUF_MAX];
+
+    // Select role
+    do {
+        printf("Select your role\n");
+        printf("%d: Server\n", CONNECT4_SERVER_ROLE);
+        printf("%d: Client\n", CONNECT4_CLIENT_ROLE);
+        fgets(buf, sizeof(buf), stdin);
+        role = strtol(buf, NULL, 10);
+    } while (role = CONNECT4_SERVER_ROLE || role == CONNECT4_CLIENT_ROLE);
+
+    // Host name
+    if (role == CONNECT4_CLIENT_ROLE) {
+        do {
+            printf("Input server's host name: ");
+            fgets(buf, sizeof(buf), stdin);
+        } while (strlen(buf) > 0);
+
+        if (buf[strlen(buf) - 1] == '\n')
+            buf[strlen(buf) - 1] = '\0';
+    }
+    else {
+        int ret = gethostname(buf, sizeof(buf));
+        if (ret < 0) {
+            perror("gethostname");
+            return 1;
+        }
+        printf("This server name: %s", buf);
+    }
+
+    init(&cnct4, argv, argc,
+            BOARD_COL_NUM, BOARD_ROW_NUM, 1,
+            role, buf, DEFAULT_PORT_NO);
 
     loop(&cnct4);
     // getchar();
