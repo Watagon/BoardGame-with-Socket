@@ -61,7 +61,7 @@ connect4_generate_disk_placable_pos_mask (Connect4_t *game)
 {
     int cell_num = game->col_num*game->row_num;
 
-    uint64_t valid_bits_mask = ~0>>(sizeof(uint64_t)*CHAR_BIT - cell_num);
+    uint64_t valid_bits_mask = ~(uint64_t)0>>(sizeof(uint64_t)*CHAR_BIT - cell_num);
     uint64_t bottom = valid_bits_mask ^ (valid_bits_mask>>game->col_num);
     uint64_t filled = game->white | game->black;
 
@@ -82,7 +82,7 @@ is_valid_move (Connect4_t *game, int row, int col)
     if (col < 0 || game->col_num <= col)
         return false;
 
-    uint64_t bit_mask = 1<<(row * game->col_num + col);
+    uint64_t bit_mask = (uint64_t)1<<(row * game->col_num + col);
 
     if (bit_mask & connect4_generate_disk_placable_pos_mask(game))
         return true;
@@ -95,7 +95,7 @@ connect4_check_win (Connect4_t *game, int row, int col)
 {
     uint64_t disks = (game->state == BLACK_MOVE) ? game->black : game->white;
     const int connection_num = 4;
-    uint64_t mask = 1<<(row * game->col_num + col);
+    uint64_t mask = (uint64_t)1<<(row * game->col_num + col);
     int count;
 
     count = 0;
