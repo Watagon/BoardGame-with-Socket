@@ -52,7 +52,7 @@ void new_game (Connect4_t *game, int col_num, int row_num)
  *  Output:
  *      return  :   disk-placable cells position mask
  */
-uint64_t
+static uint64_t
 connect4_generate_disk_placable_pos_mask (Connect4_t *game)
 {
     int cell_num = game->col_num*game->row_num;
@@ -69,7 +69,7 @@ connect4_generate_disk_placable_pos_mask (Connect4_t *game)
     return placable;
 }
 
-static bool
+bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
     // check if row and col are in valid range
@@ -86,7 +86,7 @@ is_valid_move (Connect4_t *game, int row, int col)
         return false;
 }
 
-bool
+static bool
 connect4_check_win (Connect4_t *game, int row, int col)
 {
     uint64_t disks = (game->state == BLACK_MOVE) ? game->black : game->white;
