@@ -186,12 +186,16 @@ connect4_make_move (Connect4_t *game, int row, int col)
     }
 
     // Check for win
-    if (connect4_check_win(game, row, col))
+    if (connect4_check_win(game, row, col)) {
+        game->result = (game->state == BLACK_MOVE) ? BLACK_WIN : WHITE_WIN;
         game->state = GAME_OVER;
+    }
 
     //  When there is no more placable cell (a drawn game)
-    if (!connect4_generate_disk_placable_pos_mask(game))
+    if (!connect4_generate_disk_placable_pos_mask(game)) {
+        game->result = GAME_DRAW;
         game->state = GAME_OVER;
+    }
     
     return 0;
 }
@@ -214,4 +218,10 @@ Game_state_t
 connect4_get_game_state (Connect4_t *game)
 {
     return game->state;
+}
+
+Game_result_t
+connect4_get_game_result (Connect4_t *game)
+{
+    return game->result;
 }

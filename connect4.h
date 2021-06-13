@@ -4,6 +4,12 @@
 #include <stdbool.h>
 
 typedef enum {
+    BLACK_WIN,
+    WHITE_WIN,
+    GAME_DRAW
+} Game_result_t;
+
+typedef enum {
     BLACK_MOVE,
     WHITE_MOVE,
     GAME_OVER
@@ -19,6 +25,7 @@ typedef struct othello {
     uint64_t black;
     uint64_t white;
     Game_state_t state;
+    Game_result_t result;
     int col_num, row_num;
 } Connect4_t;
 
