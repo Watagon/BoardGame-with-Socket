@@ -202,7 +202,8 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
         .sin_family = AF_INET,
         .sin_port   = htons(port_no)
     };
-    strcpy(addr.sin_addr, gethostbyname(host_name)->h_addr);
+    // strcpy((char*)&addr.sin_addr, gethostbyname(host_name)->h_addr);
+    memcpy((char*)&addr.sin_addr, gethostbyname(host_name)->h_addr, gethostbyname(host_name)->h_length);
 
     int sock_fd;
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -213,14 +214,14 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
     if (role == CONNECT4_SERVER_ROLE) {
         if (bind(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
             perror("bind");
-            exit(EXIT_FAILURE);
             close(sock_fd);
+            exit(EXIT_FAILURE);
         }
 
         listen(sock_fd, 1);
 
         int temp_fd = sock_fd;
-        sock_fd = accept(temp_fd, NULL, NULL)
+        sock_fd = accept(temp_fd, NULL, NULL);
         close(temp_fd);
         if (sock_fd < 0) {
             perror("accept");
@@ -602,15 +603,15 @@ int main (int argc, char *argv[])
         printf("%d: Server\n", CONNECT4_SERVER_ROLE);
         printf("%d: Client\n", CONNECT4_CLIENT_ROLE);
         fgets(buf, sizeof(buf), stdin);
-        role = strtol(buf, NULL, 10);
-    } while (role = CONNECT4_SERVER_ROLE || role == CONNECT4_CLIENT_ROLE);
+        role = (Connect4_role_t)strtol(buf, NULL, 10);
+    } while (role != CONNECT4_SERVER_ROLE && role != CONNECT4_CLIENT_ROLE);
 
     // Host name
     if (role == CONNECT4_CLIENT_ROLE) {
         do {
             printf("Input server's host name: ");
             fgets(buf, sizeof(buf), stdin);
-        } while (strlen(buf) > 0);
+        } while (strlen(buf) == 0 || buf[0] == '\n');
 
         if (buf[strlen(buf) - 1] == '\n')
             buf[strlen(buf) - 1] = '\0';
@@ -621,7 +622,7 @@ int main (int argc, char *argv[])
             perror("gethostname");
             return 1;
         }
-        printf("This server name: %s", buf);
+        printf("This server name: %s\n", buf);
     }
 
     init(&cnct4, argv, argc,
