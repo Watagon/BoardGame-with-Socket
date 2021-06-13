@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+static uint64_t connect4_generate_disk_placable_pos_mask (Connect4_t *game);
+static bool connect4_check_win (Connect4_t *game, int row, int col);
+static void switch_player_turn (Connect4_t *game);
+
 void new_game (Connect4_t *game, int col_num, int row_num)
 {
     assert(0<col_num && 0<row_num);
@@ -57,7 +61,7 @@ connect4_generate_disk_placable_pos_mask (Connect4_t *game)
 {
     int cell_num = game->col_num*game->row_num;
 
-    uint64_t valid_bits_mask = ~0>>(sizeof(uint64_t)*CHAR_BIT - cell_num);
+    uint64_t valid_bits_mask = ~(uint64_t)0>>(sizeof(uint64_t)*CHAR_BIT - cell_num);
     uint64_t bottom = valid_bits_mask ^ (valid_bits_mask>>game->col_num);
     uint64_t filled = game->white | game->black;
 
@@ -73,12 +77,12 @@ bool
 is_valid_move (Connect4_t *game, int row, int col)
 {
     // check if row and col are in valid range
-    if (row < 0 || row <= game->row_num)
+    if (row < 0 || game->row_num <= row)
         return false;
-    if (col < 0 || col <= game->col_num)
+    if (col < 0 || game->col_num <= col)
         return false;
 
-    uint64_t bit_mask = 1<<(row * game->col_num + col);
+    uint64_t bit_mask = (uint64_t)1<<(row * game->col_num + col);
 
     if (bit_mask & connect4_generate_disk_placable_pos_mask(game))
         return true;
@@ -91,7 +95,7 @@ connect4_check_win (Connect4_t *game, int row, int col)
 {
     uint64_t disks = (game->state == BLACK_MOVE) ? game->black : game->white;
     const int connection_num = 4;
-    uint64_t mask = 1<<(row * game->col_num + col);
+    uint64_t mask = (uint64_t)1<<(row * game->col_num + col);
     int count;
 
     count = 0;
@@ -196,10 +200,29 @@ connect4_make_move (Connect4_t *game, int row, int col)
         game->result = GAME_DRAW;
         game->state = GAME_OVER;
     }
-    
+
+    switch_player_turn(game);
+
     return 0;
 }
 
+static void
+switch_player_turn (Connect4_t *game)
+{
+    switch (game->state)
+    {
+    case BLACK_MOVE:
+        game->state = WHITE_MOVE;
+        break;
+
+    case WHITE_MOVE:
+        game->state = BLACK_MOVE;
+        break;
+
+    default:
+        break;
+    }
+}
 
 Cell_state_t
 connect4_get_cell_state (Connect4_t *game, int row, int col)
@@ -224,4 +247,10 @@ Game_result_t
 connect4_get_game_result (Connect4_t *game)
 {
     return game->result;
+}
+
+Game_result_t
+connect4_get_my_win_result_value (Game_state_t my_move)
+{
+    return (my_move == BLACK_MOVE) ? BLACK_WIN : WHITE_WIN;
 }
