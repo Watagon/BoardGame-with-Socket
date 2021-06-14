@@ -227,6 +227,7 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
         close(temp_fd);
         if (sock_fd < 0) {
             perror("accept");
+            close(sock_fd);
             exit(EXIT_FAILURE);
         }
         puts("Established connects successfully!!");
@@ -234,7 +235,11 @@ init_sock (char *host_name, int port_no, Connect4_role_t role)
     else {
         // role == CONNECT4_CLIENT_ROLE
         puts("Connecting to the server...");
-        connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr));
+        if (connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            perror("connect");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
+        }
         puts("Connected!!");
     }
 
@@ -517,17 +522,21 @@ void highlight_cell_mouse_on (X11Connect4_t *cnct4)
 
 void mouse_click (X11Connect4_t *cnct4)
 {
-    if (cnct4->game.state == GAME_OVER) {
-        new_game(&cnct4->game, cnct4->game.row_num, cnct4->game.row_num);
+    if (connect4_get_game_state(&cnct4->game) != cnct4->my_move)
+        return;
+
+    Grid_t *grid = &cnct4->grid;
+    if (!is_valid_move(&cnct4->game, grid->selected_row, grid->selected_col))
+        return;
+
+    connect4_make_move(&cnct4->game, cnct4->grid.selected_row, cnct4->grid.selected_col);
+
+    char buf[BUF_MAX];
+    snprintf(buf, sizeof(buf), "PLACE-%d%d", grid->selected_col, grid->selected_row);
+    if (write(cnct4->sock_fd, buf, strlen(buf)) < 0) {
+        perror("write");
         return;
     }
-    if (cnct4->game.state == BLACK_MOVE) {
-
-    }
-    else if (cnct4->game.state == WHITE_MOVE) {
-
-    }
-        
 }
 
 int finalize (X11Connect4_t *cnct4)
@@ -567,6 +576,7 @@ void loop (X11Connect4_t *cnct4)
         }
 
         if (FD_ISSET(cnct4->sock_fd, &fd_mask)) {
+            redraw_flg = true;
             ssize_t len = read(cnct4->sock_fd, buf, sizeof(buf));
             if (len < 0) {
                 perror("read");
@@ -576,7 +586,10 @@ void loop (X11Connect4_t *cnct4)
                 // my move, not opposit's move
                 if (connect4_get_game_state(&cnct4->game) == cnct4->my_move) {
                     puts("Error: it is your turn, but the oppsit made move");
-                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                        perror("write");
+                        return;
+                    }
                     return;
                 }
                 char xc, yc;
@@ -584,12 +597,20 @@ void loop (X11Connect4_t *cnct4)
                 int col = xc - '0';
                 int row = yc - '0';
                 if (!is_valid_move(&cnct4->game, row, col)) {
-                    write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                    if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                        perror("write");
+                        return;
+                    }
                     puts("Error: Invalid move by the opposit");
                     // printf("%d:%d\n", row, col);
                     return;
                 }
                 connect4_make_move(&cnct4->game, row, col);
+                if (connect4_get_cell_state(&cnct4->game) == GAME_OVER)
+                    if (connect4_get_game_result(&cnct4->game) == connect4_get_my_win_result_value(cnct4->my_move)) {
+                        write(cnct4->sock_fd, YOUWIN_MSG, strlen(YOUWIN_MSG));
+                        return;
+                    }
             }
             else if (strcmp(buf, ERROR_MSG) == 0) {
                 if (connect4_get_game_result(&cnct4->game) == GAME_DRAW) {
@@ -606,7 +627,10 @@ void loop (X11Connect4_t *cnct4)
             }
             else {
                 puts("Recieved invalid messeage");
-                write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG));
+                if (write(cnct4->sock_fd, ERROR_MSG, strlen(ERROR_MSG)) < 0) {
+                    perror("write");
+                    return;
+                }
                 return;
             }
         }
