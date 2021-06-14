@@ -606,13 +606,14 @@ void loop (X11Connect4_t *cnct4)
                     return;
                 }
                 connect4_make_move(&cnct4->game, row, col);
-                if (connect4_get_cell_state(&cnct4->game) == GAME_OVER)
-                    if (connect4_get_game_result(&cnct4->game) == connect4_get_my_win_result_value(cnct4->my_move)) {
+                if (connect4_get_game_state(&cnct4->game) == GAME_OVER)
+                    if (connect4_get_game_result(&cnct4->game) != connect4_get_my_win_result_value(cnct4->my_move)) {
                         write(cnct4->sock_fd, YOUWIN_MSG, strlen(YOUWIN_MSG));
+                        puts("You Lose");
                         return;
                     }
             }
-            else if (strcmp(buf, ERROR_MSG) == 0) {
+            else if (strstr(buf, ERROR_MSG)) {
                 if (connect4_get_game_result(&cnct4->game) == GAME_DRAW) {
                     puts("Game: Draw");
                 }
@@ -621,7 +622,7 @@ void loop (X11Connect4_t *cnct4)
                     return;
                 }
             }
-            else if (strcmp(buf, YOUWIN_MSG) == 0) {
+            else if (strstr(buf, YOUWIN_MSG)) {
                 puts("congratulations!! You win!!");
                 return;
             }
