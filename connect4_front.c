@@ -606,6 +606,11 @@ void loop (X11Connect4_t *cnct4)
                     return;
                 }
                 connect4_make_move(&cnct4->game, row, col);
+                if (connect4_get_cell_state(&cnct4->game) == GAME_OVER)
+                    if (connect4_get_game_result(&cnct4->game) == connect4_get_my_win_result_value(cnct4->my_move)) {
+                        write(cnct4->sock_fd, YOUWIN_MSG, strlen(YOUWIN_MSG));
+                        return;
+                    }
             }
             else if (strcmp(buf, ERROR_MSG) == 0) {
                 if (connect4_get_game_result(&cnct4->game) == GAME_DRAW) {
